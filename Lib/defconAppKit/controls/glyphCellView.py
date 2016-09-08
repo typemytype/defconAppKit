@@ -84,10 +84,10 @@ def _makeGlyphCellDragIcon(glyphs):
 
 
 class DefconAppKitGlyphCellNSView(NSView):
-        
+
     def initWithFrame_cellRepresentationName_detailWindowClass_(self,
         frame, cellRepresentationName, detailWindowClass):
-        self = DefconAppKitGlyphCellNSView.alloc().initWithFrame_(frame)
+        self = super(DefconAppKitGlyphCellNSView, self).initWithFrame_(frame)
         self._cellWidth = 50
         self._cellHeight = 50
         self._glyphs = []
@@ -720,7 +720,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                     match = item
                     matchIndex = index
                     continue
-                    
+
                 # if the item is greater than the input string,it can be used as a last resort
                 # example:
                 # given this order: vanilla, zipimport
@@ -732,7 +732,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                         lastResortIndex = index
                         continue
                     # if existing the last resort is greater than the item
-                    # the item is a closer match to the input string 
+                    # the item is a closer match to the input string
                     if lastResort > item:
                         lastResort = item
                         lastResortIndex = index
@@ -753,7 +753,7 @@ class DefconAppKitGlyphCellNSView(NSView):
         if not self._selection:
             currentSelection = None
         else:
-            
+
             currentSelection = self._lastSelectionFound
             if haveShiftKey:
                 if character == NSUpArrowFunctionKey or character == NSLeftArrowFunctionKey:
@@ -762,7 +762,7 @@ class DefconAppKitGlyphCellNSView(NSView):
                 else:
                     self._lastSelectionFound = sorted(self._selection)[0]
                     currentSelection = sorted(self._selection)[-1]
-            
+
         if character == NSUpArrowFunctionKey or character == NSDownArrowFunctionKey:
             if currentSelection is None:
                 newSelection = 0
