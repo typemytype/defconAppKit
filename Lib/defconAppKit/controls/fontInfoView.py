@@ -1972,8 +1972,14 @@ class FontInfoToolbarButton(vanilla.Button):
 class DefconAppKitFontInfoSectionView(NSView):
 
     def viewDidMoveToWindow(self):
+        if hasattr(self, "_haveMovedToWindow"):
+            return
+        if self.window() is None:
+            return
         if hasattr(self, "vanillaWrapper") and self.vanillaWrapper() is not None:
+            self._haveMovedToWindow = True
             v = self.vanillaWrapper()
+            v.buildUI()
             v._scrollView.setPosSize(v._scrollView._posSize)
             v._adjustControlSizes()
 
@@ -1984,6 +1990,8 @@ class DefconAppKitFontInfoCategoryControlsGroup(NSView):
 
     def viewDidMoveToWindow(self):
         if hasattr(self, "_haveMovedToWindow"):
+            return
+        if self.window() is None:
             return
         self._haveMovedToWindow = True
         scrollView = self.enclosingScrollView()
@@ -2007,6 +2015,8 @@ class FontInfoSection(vanilla.Group):
 
     def __init__(self, posSize, groupOrganization, controlDescriptions, font):
         super(FontInfoSection, self).__init__(posSize)
+        self._groupOrganization = groupOrganization
+        self._controlDescriptions = controlDescriptions
         self._finishedSetup = False
         self._font = font
         left, top, width, height = posSize
@@ -2017,7 +2027,14 @@ class FontInfoSection(vanilla.Group):
         self._attributeToControl = {}
         self._defaultControlToAttribute = {}
         self._attributeToDefaultControl = {}
+
+    def buildUI(self):
+        if self._finishedSetup:
+            return
         ## top navigation
+        groupOrganization = self._groupOrganization
+        controlDescriptions = self._controlDescriptions
+        left, top, width, height = self._posSize
         self._buttonBar = FontInfoToolbar((0, 12, -0, 60))
         groupTitles = [group[0] for group in groupOrganization]
         if len(groupTitles) > 1:
@@ -2200,7 +2217,6 @@ class FontInfoSection(vanilla.Group):
                 ## final offset
                 currentTop -= 15
 
-
         # scroll view
         height = abs(currentTop)
         self._scrollView = vanilla.ScrollView((0, 62, -0, -0), controlView.getNSView(), backgroundColor=backgroundColor, hasHorizontalScroller=False)
@@ -2212,13 +2228,20 @@ class FontInfoSection(vanilla.Group):
         ##load info
         self._loadInfo()
         self._updatePlaceholders()
-        self._font.info.addObserver(self, "_infoChanged", "Info.Changed") 
+        self._font.info.addObserver(self, "_infoChanged", "Info.Changed")
         self._finishedSetup = True
 
     def _breakCycles(self):
-        if self._font.info.hasObserver(self, "Info.Changed"): 
+        if self._font and self._font.info.hasObserver(self, "Info.Changed"):
             self._font.info.removeObserver(self, "Info.Changed")
-        self._jumpButtons = []
+        self._font = None
+        self._groupOrganization = None
+        self._controlDescriptions = None
+        self._jumpButtons = None
+        self._controlToAttributeData = None
+        self._attributeToControl = None
+        self._defaultControlToAttribute = None
+        self._attributeToDefaultControl = None
         super(FontInfoSection, self)._breakCycles()
 
     def _loadInfo(self):
@@ -2304,7 +2327,7 @@ class FontInfoSection(vanilla.Group):
             value = conversionFunction(value)
         # set
         setattr(self._font.info, attribute, value)
-        
+
 
     def _useDefaultCallback(self, sender):
         state = sender.get()
@@ -2334,24 +2357,25 @@ class FontInfoSection(vanilla.Group):
         else:
             control.set(value)
 
-    def _infoChanged(self, notification): 
-        self._updatePlaceholders()
-    
+    def _infoChanged(self, notification):
+        if self._font is not None:
+            self._updatePlaceholders()
+
     def _updatePlaceholders(self):
-        for control, attributeData in self._controlToAttributeData.items(): 
-            if isinstance(control, vanilla.EditText): 
-                if not attributeData["hasDefault"]: 
-                    continue 
-                attribute = attributeData["fontAttribute"] 
-                conversionFunction = attributeData["conversionToUFO"] 
+        for control, attributeData in self._controlToAttributeData.items():
+            if isinstance(control, vanilla.EditText):
+                if not attributeData["hasDefault"]:
+                    continue
+                attribute = attributeData["fontAttribute"]
+                conversionFunction = attributeData["conversionToUFO"]
                 try:
-                    value = getAttrWithFallback(self._font.info, attribute) 
+                    value = getAttrWithFallback(self._font.info, attribute)
                 except:
                     value = None
-                if value is None: 
-                    value = "" 
-                if not isinstance(value, basestring): 
-                    value = str(value) 
+                if value is None:
+                    value = ""
+                if not isinstance(value, basestring):
+                    value = str(value)
                 control.setPlaceholder(value)
 # ---------
 # main view
@@ -2386,4 +2410,8 @@ class FontInfoView(vanilla.Tabs):
 
     def _tabSelectionCallback(self, sender):
         self.set(sender.get())
+
+
+
+
 
