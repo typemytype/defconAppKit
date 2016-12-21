@@ -2028,6 +2028,8 @@ class FontInfoSection(vanilla.Group):
         self._attributeToDefaultControl = {}
 
     def buildUI(self):
+        if self._finishedSetup:
+            return
         groupOrganization = self._groupOrganization
         controlDescriptions = self._controlDescriptions
         left, top, width, height = self._posSize
